@@ -1,0 +1,27 @@
+{{ $length := len .GroupLabels -}} {{ if ne $length 0 }}
+<b>[Group Labels]</b>
+{{ range $key,$val := .GroupLabels -}}
+    <em>{{$val}}</em>
+{{- end }} 
+{{if eq .Status "firing"}}
+Status: <b>{{.Status | toUpper }} 🔥</b>
+{{end}}
+{{- if eq .Status "resolved"}}
+Status: <b>{{.Status | toUpper}} ✅</b>
+{{end}}
+<b>Instance:</b>
+{{ range $val := .Alerts -}}
+{{ $length_labels := len $val.Labels -}} {{ if ne $length_labels 0 -}}
+<b>[Labels]</b>
+{{ range $key,$value := $val.Labels -}}
+    <b>{{$key}}:</b> {{$value}}
+{{ end }} 
+{{ end -}} 
+{{ $length_annotations := len $val.Annotations -}} {{ if ne $length_annotations 0 -}}
+<b>[Annotations]</b>
+{{ range $key,$value := $val.Annotations -}}
+   <b> {{$key}}:</b> {{$value}}
+{{ end }}    
+{{ end -}}
+{{end -}}
+{{- end -}}

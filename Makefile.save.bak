@@ -1,0 +1,72 @@
+#Автоматические переменные
+#$@ - Имя цели обрабатываемого правила
+#$< Имя первой зависимости обрабатываемого правила
+#$^ Список всех зависимостей обрабатываемого правила
+
+#git tag -a v0.1.0 -m "First release"
+#git push origin v0.1.0
+#goreleaser
+
+TEST_DIR   := $(CURDIR)/vendor/src/app/..."
+dist_dir   := $(CURDIR)/dist
+TAG        := "v0.1.0"
+TAG_EXSIST := $(shell git tag --list $(TAG))
+
+.PHONY: all
+all: test 
+
+.PHONY: test
+test:
+	@echo "Testing..."
+	$Q go test $(if $V,-v) -i -race $(TEST_DIR) # install -race libs to speed up next run
+ifndef CI
+	@echo "Testing Outside CI..."
+	$Q go vet $(TEST_DIR)
+	$Q GODEBUG=cgocheck=2 go test -race $(TEST_DIR)
+else
+	@echo "Testing in CI..."
+	$Q ( go vet $(TEST_DIR); echo $$? ) | \
+       tee test/vet.txt | sed '$$ d'; exit $$(tail -1 test/vet.txt)
+	$Q ( GODEBUG=cgocheck=2 go test -v -race $(TEST_DIR); echo $$? ) | \
+       tee test/output.txt | sed '$$ d'; exit $$(tail -1 test/output.txt)
+endif
+
+
+
+.PHONY: release
+release: clean-dist tag
+	$Q goreleaser
+
+
+.PHONY: clean-dist
+clean-dist:
+ifeq (,$(wildcard $(dist_dir)))
+	@echo "Dir $(dist_dir) not exist"
+else
+	@rm -rd $(dist_dir)
+	@echo "Success remove dir"
+endif	
+
+.PHONY: tag
+tag:
+	@echo "Tag..."
+	@if [  $(TAG_EXSIST) ]; then \
+		echo "Error create tag: $(TAG) exist"; \
+	fi
+	@if [ ! $(TAG_EXSIST) ]; then \
+		@echo "Start create tag: $(TAG)"; \
+		@git tag -a $(TAG) -m $(TAG); \
+		@echo "Git push tag: $(TAG)"; \
+		@git push origin $(TAG); \
+	fi
+	@echo "End tag"
+
+	
+.PHONY: clean-tag	
+clean-tag:
+	@echo "Clean Tag..."
+	@if [  $(TAG_EXSIST) ]; then \
+		@echo "Error create tag: $(TAG) exist"; \
+	fi	
+	@echo "End clean tag"
+

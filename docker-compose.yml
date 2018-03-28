@@ -1,0 +1,17 @@
+version: '3'
+services:
+  prometheus-telegram-bot:
+    build: .
+    hostname: prometheus-telegram-bot
+    restart: always
+    ports:
+      - "9087:9087"
+    entrypoint:  
+      - "/opt/prometheus_bot"
+      - "--debug=true"
+      - "--telegram-token=${TELEGRAM_BOT_TOKEN}"
+
+      
+
+
+        
