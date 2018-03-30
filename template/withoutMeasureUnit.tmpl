@@ -12,7 +12,5 @@ Status: <b>{{.Status | toUpper}} ✅</b>
 <b>Instance:</b>
 {{- range $val := .Alerts }}
  <b>{{index $val.Labels "instance" | instanceMapping }}</b>
- <b>device:</b> {{index $val.Labels "device"}}
- <b>value:</b> {{index $val.Annotations "value" | measurePrecision }}{{index $val.Annotations "measureUnit"}}   
-{{end -}}
+{{- end -}}
 {{- end -}}
