@@ -1,5 +1,4 @@
 DOCKER_IMAGE     := jieht9u/prometheus-telegram-bot
-GITVERSION		 := 1.0.0
 DOCKERFILE_LOCAL := dockerfile
 TEST_PKG         := msg 
 TEST_DIR		 := ./vendor/src/app/#./vendor/src/app/...
@@ -11,6 +10,7 @@ VERSION_FLAGS    := -ldflags='-X "main.Version=$(VERSION)" -X "main.BuildTime=$(
 bin_dir			 := $(CURDIR)/bin
 dist_dir 		 := $(CURDIR)/dist
 
+GITVERSION		 := 1.0.1
 
 .PHONY: all 
 all: test build
@@ -60,7 +60,10 @@ docker-push:
 	$Q docker push $(DOCKER_IMAGE):$(GITVERSION)
 
 
-
+#TAG RELEASE
+.PHONY: tag-release
+tag-release: tag 
+	$Q git push origin v$(GITVERSION)
 
 # RELEASE
 .PHONY: release
@@ -71,7 +74,6 @@ release: clean-dist tag
 clean-dist:
 	@echo "Removing distribution files"
 	rm -rf $(dist_dir)
-
 
 .PHONY: tags echo
 tags:
