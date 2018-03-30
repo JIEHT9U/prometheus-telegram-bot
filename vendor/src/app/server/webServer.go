@@ -99,7 +99,7 @@ func (c WebServerConfig) GetHandler(bot bot.TelegramBot, tmps map[string]*tmplht
 		c.Logger.InfoEntry().Debugf("Final MSg :\n %s", finalMSg)
 
 		if len(finalMSg) > c.MsgSize {
-			for i, ss := range SplitString(finalMSg, c.MsgSize) {
+			for i, ss := range SplitMsg(finalMSg, c.MsgSize) {
 				_, err = bot.Send(chatID, ss)
 				if err != nil {
 					err := fmt.Errorf("Error send  msg telegram bot: %s", err)
@@ -127,15 +127,16 @@ func (c WebServerConfig) GetHandler(bot bot.TelegramBot, tmps map[string]*tmplht
 	return r
 }
 
-func SplitString(s string, n int) []string {
+func SplitMsg(s string, n int) []string {
 
 	var concatString string
 	var floor = int(math.Floor(float64(len(s)) / float64(n)))
 	var res = make([]string, 0, floor)
 
 	for _, s := range strings.Split(s, "\n") {
-		if len(concatString) <= n {
-			concatString += fmt.Sprintf("%s \n", s)
+		fmtString := fmt.Sprintf("%s \n", s)
+		if (len(concatString) + len(fmtString)) <= n {
+			concatString += fmtString
 			continue
 		}
 		res = append(res, concatString)

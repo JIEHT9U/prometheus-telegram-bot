@@ -8,27 +8,24 @@ import (
 )
 
 type ServerRunOptions struct {
-	TelegramToken       string
-	TemplatePaths       []string
-	DefaultTemplatePath string
-	TimeZone            string
-	TimeOutFormat       string
-	SplitChart          string
-	MessageSizeBytes    int
-	BindAddress         net.IP
-	BindPort            int
-	Debug               bool
-	JSON                bool
+	TelegramToken    string
+	TemplatePaths    []string
+	TimeZone         string
+	TimeOutFormat    string
+	MessageSizeBytes int
+	BindAddress      net.IP
+	BindPort         int
+	Debug            bool
+	JSON             bool
 }
 
 // NewServerRunOptions creates a new ServerRunOptions object with default parameters
 func NewServerRunOptions() *ServerRunOptions {
 	return &ServerRunOptions{
-		BindAddress:         net.ParseIP("0.0.0.0"),
-		BindPort:            9087,
-		TemplatePaths:       []string{"template/*.tmpl"},
-		DefaultTemplatePath: "default/default.tmpl",
-		MessageSizeBytes:    4096,
+		BindAddress:      net.ParseIP("0.0.0.0"),
+		BindPort:         9087,
+		TemplatePaths:    []string{"template/*.tmpl"},
+		MessageSizeBytes: 2048,
 	}
 }
 
@@ -41,17 +38,11 @@ func (server *ServerRunOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringSliceVar(&server.TemplatePaths, "template-paths", server.TemplatePaths, ""+
 		"Template path")
 
-	fs.StringVar(&server.DefaultTemplatePath, "default-template-path", server.DefaultTemplatePath, ""+
-		"Default template path")
-
 	fs.StringVar(&server.TimeZone, "time-zone", server.TimeZone, ""+
 		"Time zone")
 
 	fs.StringVar(&server.TimeOutFormat, "time-out-format", server.TimeOutFormat, ""+
 		"Time out format")
-
-	fs.StringVar(&server.SplitChart, "split-chart", server.SplitChart, ""+
-		"Split chart")
 
 	fs.IntVar(&server.MessageSizeBytes, "message-size-bytes", server.MessageSizeBytes, ""+
 		"Telegam message bytr suze (Current maximum length is 4096 UTF8 characters)")

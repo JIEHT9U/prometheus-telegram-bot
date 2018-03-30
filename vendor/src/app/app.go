@@ -22,7 +22,7 @@ func Run(runOptions *options.ServerRunOptions, stopCh <-chan struct{}, l *logger
 		"10.1.9.110": "Uplexr",
 	}
 
-	tmps, err := t.Load(mapsInstance, runOptions.TemplatePaths, runOptions.DefaultTemplatePath)
+	tmps, err := t.Load(mapsInstance, runOptions.TemplatePaths)
 	if err != nil {
 		return err
 	}

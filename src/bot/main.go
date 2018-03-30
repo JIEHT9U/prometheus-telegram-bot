@@ -18,8 +18,8 @@ import (
 
 // var onlyOneSignalHandler = make(chan struct{})
 // var shutdownSignals = []os.Signal{os.Interrupt}
-
 // Version is the tagged version or "dev"
+
 var Version = "dev"
 
 // BuildDate is the date of the release build or ""

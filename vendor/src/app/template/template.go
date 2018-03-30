@@ -50,7 +50,7 @@ type Tempate struct {
 	Default   *tmplhtml.Template
 }
 
-func Load(mapsInstance map[string]string, paths []string, defaultTemplate string) (map[string]*tmplhtml.Template, error) {
+func Load(mapsInstance map[string]string, paths []string) (map[string]*tmplhtml.Template, error) {
 
 	var err error
 	var tmps = map[string]*tmplhtml.Template{}

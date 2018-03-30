@@ -1,6 +1,6 @@
 DOCKER_IMAGE     := jieht9u/prometheus-telegram-bot
-bin_dir		 := $(CURDIR)/bin
-VER		 := 1.0.0
+bin_dir			 := $(CURDIR)/bin
+VER				 := 1.0.0
 TAG              := v$(VERSION)
 DOCKERFILE_LOCAL := dockerfile
 TEST_PKG         := msg 
@@ -19,14 +19,14 @@ all: test build
 test: unit-test gometalinter
 
 .PHONY: unit-test
-test: unit-test
+unit-test:
 	@echo "Unit Testing..."
 	@for pkg in $(TEST_PKG) ; do \
 		GODEBUG=cgocheck=2 go test -race -v $(TEST_DIR)$$pkg; \
 	done	
 
 .PHONY: gometalinter
-test: gometalinter
+gometalinter: gometalinter
 	@echo "Gometalinter Run..."
 	@for pkg in $(TEST_PKG) ; do \
 		gometalinter $(TEST_DIR)$$pkg; \
@@ -53,4 +53,5 @@ docker-push:
 	@echo "Docker Push..."
 	$Q docker tag $(DOCKER_IMAGE):$(VER) $(DOCKER_IMAGE):$(VER) 
 	$Q docker push $(DOCKER_IMAGE):$(VER)
+
 
