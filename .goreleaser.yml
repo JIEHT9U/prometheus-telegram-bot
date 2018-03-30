@@ -41,9 +41,10 @@ dockers:
     binary: prometheus-telegram-bot
     image: jieht9u/prometheus-telegram-bot
     tag_templates:
-    # - "{{ .Tag }}"
-    # - "v{{ .Major }}"
+    - "{{ .Tag }}"
+    - "v{{ .Major }}"
     - "{{ .Major }}.{{ .Minor }}"
-    # - latest  
+    - latest  
     extra_files:
     - template
+    - mapping

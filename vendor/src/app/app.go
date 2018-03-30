@@ -3,6 +3,7 @@ package app
 import (
 	"app/bot"
 	"app/logger"
+	m "app/mapping"
 	"app/options"
 	"app/server"
 	t "app/template"
@@ -18,8 +19,9 @@ func Run(runOptions *options.ServerRunOptions, stopCh <-chan struct{}, l *logger
 		return utilerrors.NewAggregate(errs)
 	}
 
-	mapsInstance := map[string]string{
-		"10.1.9.110": "Uplexr",
+	mapsInstance, err := m.GetNames(runOptions.MappingNamePaths)
+	if err != nil {
+		return err
 	}
 
 	tmps, err := t.Load(mapsInstance, runOptions.TemplatePaths)

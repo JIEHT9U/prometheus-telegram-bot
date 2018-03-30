@@ -93,3 +93,9 @@ tag:
 td:
 	@echo "Delete tag" $(GITVERSION)
 	$Q @git tag -d v$(GITVERSION) 
+
+#MERGE
+.PHONY: merge
+merge:
+	$Q git checkout master
+	$Q git merge develop

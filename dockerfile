@@ -13,7 +13,7 @@ FROM alpine:3.7
 RUN apk add --no-cache ca-certificates
 COPY --from=build /build/bin/prometheus_bot /opt/prometheus_bot 
 COPY ./template template 
-COPY ./default  default 
+COPY ./mapping mapping 
 EXPOSE 9087
 ENTRYPOINT ["/opt/prometheus_bot"]
 

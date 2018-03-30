@@ -17,6 +17,7 @@ type ServerRunOptions struct {
 	BindPort         int
 	Debug            bool
 	JSON             bool
+	MappingNamePaths []string
 }
 
 // NewServerRunOptions creates a new ServerRunOptions object with default parameters
@@ -25,6 +26,7 @@ func NewServerRunOptions() *ServerRunOptions {
 		BindAddress:      net.ParseIP("0.0.0.0"),
 		BindPort:         9087,
 		TemplatePaths:    []string{"template/*.tmpl"},
+		MappingNamePaths: []string{"mapping/*.yaml"},
 		MessageSizeBytes: 2048,
 	}
 }
@@ -37,6 +39,9 @@ func (server *ServerRunOptions) AddFlags(fs *pflag.FlagSet) {
 
 	fs.StringSliceVar(&server.TemplatePaths, "template-paths", server.TemplatePaths, ""+
 		"Template path")
+
+	fs.StringSliceVar(&server.MappingNamePaths, "mapping-files-paths", server.MappingNamePaths, ""+
+		"Paths for name mapping files")
 
 	fs.StringVar(&server.TimeZone, "time-zone", server.TimeZone, ""+
 		"Time zone")
