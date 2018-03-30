@@ -103,8 +103,9 @@ func Find(tmps map[string]*tmplhtml.Template, templateName string) (*tmplhtml.Te
 		return template, nil
 	}
 	if template, ok := tmps[trimExtension(DEFAULT_TEMPLATE_NAME)]; ok {
-		return template, NewDefaultTempate("Use default template")
+		return template, NewDefaultTempate(fmt.Sprintf("Not found template %s will be use default template instedd", templateName))
 	}
+
 	return nil, errors.New("Not found template")
 }
 
