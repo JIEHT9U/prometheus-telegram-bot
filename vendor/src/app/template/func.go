@@ -63,13 +63,13 @@ func instanceMapping(m map[string]string) func(string) string {
 
 		str := strings.Split(instance, ":")
 		if len(str) != 2 {
-			return fmt.Sprintf("[ %s ]", instance)
+			return fmt.Sprintf("%s", instance)
 		}
 		ip := str[0]
 		if v, ok := m[ip]; ok {
-			return fmt.Sprintf("[%s | %s ]", ip, v)
+			return fmt.Sprintf("%s | %s", ip, v)
 		}
-		return fmt.Sprintf("[ %s ]", ip)
+		return fmt.Sprintf("%s", ip)
 	})
 }
 
