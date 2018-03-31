@@ -1,7 +1,6 @@
 {{ $length := len .GroupLabels -}} {{ if ne $length 0 }}
-<b>[Group Labels]</b>
 {{ range $key,$val := .GroupLabels -}}
-    <em>{{$val}}</em>
+    <b>[</b> {{$val}} <b>]</b>
 {{- end }} 
 {{if eq .Status "firing"}}
 Status: <b>{{.Status | toUpper }} 🔥</b>
@@ -11,6 +10,6 @@ Status: <b>{{.Status | toUpper}} ✅</b>
 {{end}}
 <b>Instance:</b>
 {{- range $val := .Alerts }}
- <b>{{index $val.Labels "instance" | instanceMapping }}</b>
+<em>{{index $val.Labels "instance" | instanceMapping }}</em>
 {{- end -}}
 {{- end -}}

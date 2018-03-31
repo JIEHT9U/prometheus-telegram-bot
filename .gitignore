@@ -5,7 +5,6 @@ bin
 test.txt
 
 .env
-
 /bin
 dist/
 
@@ -95,3 +94,4 @@ typings/
 
 # next.js build output
 .next
+rsync.sh
