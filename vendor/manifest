@@ -45,6 +45,12 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/gorilla/websocket",
+			"repository": "https://github.com/gorilla/websocket",
+			"revision": "eb925808374e5ca90c83401a40d711dc08c0c0f6",
+			"branch": "master"
+		},
+		{
 			"importpath": "github.com/manucorporat/stats",
 			"repository": "https://github.com/manucorporat/stats",
 			"revision": "8f2d6ace262eba462e9beb552382c98be51d807b",

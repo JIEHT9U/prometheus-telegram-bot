@@ -18,6 +18,7 @@ import (
 	tmplhtml "html/template"
 
 	"github.com/gorilla/mux"
+	"github.com/gorilla/websocket"
 )
 
 type WebServerConfig struct {
@@ -45,8 +46,47 @@ func (c WebServerConfig) CreateWebServer(handler http.Handler) *http.Server {
 	}
 }
 
+type wsMsg struct {
+	BotFormat string
+	Received  string
+	Count     int
+}
+
 func (c WebServerConfig) GetHandler(bot bot.TelegramBot, tmps map[string]*tmplhtml.Template) http.Handler {
 	r := mux.NewRouter()
+
+	upgrader := websocket.Upgrader{
+		ReadBufferSize:    4096,
+		WriteBufferSize:   4096,
+		EnableCompression: true,
+		Subprotocols:      []string{"websocket"},
+		CheckOrigin: func(r *http.Request) bool {
+			return true
+		},
+	}
+
+	wsChanel := make(chan wsMsg, 1)
+
+	r.HandleFunc("/ws/{ws_id}", func(w http.ResponseWriter, r *http.Request) {
+		ws, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			c.Logger.ReqError(w, err)
+			c.Logger.ErrEntry().Error(err)
+			return
+		}
+		defer ws.Close()
+
+		go func() {
+			for {
+				_, msg, err := ws.ReadMessage()
+				if err != nil {
+					c.Logger.ErrEntry().Error(err)
+				}
+				c.Logger.InfoEntry().Infof("msg:%s", msg)
+			}
+		}()
+
+	})
 
 	r.HandleFunc("/alert/{template_name}/{chat_id}", func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -97,6 +137,17 @@ func (c WebServerConfig) GetHandler(bot bot.TelegramBot, tmps map[string]*tmplht
 		}
 
 		c.Logger.InfoEntry().Debugf("Final MSg :\n %s", finalMSg)
+
+		select {
+		case wsChanel <- wsMsg{
+			BotFormat: finalMSg,
+			Count:     c.MsgSize,
+			Received:  receiveMsg,
+		}:
+			c.Logger.InfoEntry().Info("Success send msg in wsMsg")
+		case <-time.After(time.Microsecond * 500):
+			c.Logger.ErrEntry().Error("Success send msg in wsMsg timeout 500ms")
+		}
 
 		if len(finalMSg) > c.MsgSize {
 			for i, ss := range SplitMsg(finalMSg, c.MsgSize) {
