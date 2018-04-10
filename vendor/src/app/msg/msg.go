@@ -9,36 +9,36 @@ import (
 
 //Alerts struct
 type Alerts struct {
-	Alerts            []Alert           `json:"alerts"`
-	CommonAnnotations map[string]string `json:"commonAnnotations"`
-	CommonLabels      map[string]string `json:"commonLabels"`
-	ExternalURL       string            `json:"externalURL"`
-	GroupKey          string            `json:"groupKey"`
-	GroupLabels       map[string]string `json:"groupLabels"`
-	Receiver          string            `json:"receiver"`
-	Status            string            `json:"status"`
-	Version           string            `json:"version"`
+	Alerts            []Alert           `json:"Alerts"`
+	CommonAnnotations map[string]string `json:"CommonAnnotations"`
+	CommonLabels      map[string]string `json:"CommonLabels"`
+	ExternalURL       string            `json:"ExternalURL"`
+	GroupKey          string            `json:"GroupKey"`
+	GroupLabels       map[string]string `json:"GroupLabels"`
+	Receiver          string            `json:"Receiver"`
+	Status            string            `json:"Status"`
+	Version           string            `json:"Version"`
 }
 
 //Alert struct
 type Alert struct {
-	Annotations  map[string]string `json:"annotations"`
-	GeneratorURL string            `json:"generatorURL"`
+	Annotations  map[string]string `json:"Annotations"`
+	GeneratorURL string            `json:"GeneratorURL"`
+	Labels       map[string]string `json:"Labels"`
+	EndsAt       string            `json:"SendsAt"`
+	StartsAt     string            `json:"StartsAt"`
 	// Labels       Label             `json:"labels"`
-	Labels   map[string]string `json:"labels"`
-	EndsAt   string            `json:"sendsAt"`
-	StartsAt string            `json:"startsAt"`
 }
 
-//Label struct
-type Label struct {
-	Alertname string `json:"alertname,omitempty"`
-	Env       string `json:"env,omitempty"`
-	Instance  string `json:"instance,omitempty"`
-	Job       string `json:"job,omitempty"`
-	Monitor   string `json:"monitor,omitempty"`
-	Severity  string `json:"severity,omitempty"`
-}
+// //Label struct
+// type Label struct {
+// 	Alertname string `json:"Alertname,omitempty"`
+// 	Env       string `json:"Env,omitempty"`
+// 	Instance  string `json:"Instance,omitempty"`
+// 	Job       string `json:"Job,omitempty"`
+// 	Monitor   string `json:"Monitor,omitempty"`
+// 	Severity  string `json:"Severity,omitempty"`
+// }
 
 //Parser use for parsing input io msg end return Alerts
 func Parser(r io.Reader) (Alerts, string, error) {

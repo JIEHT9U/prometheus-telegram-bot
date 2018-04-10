@@ -9,13 +9,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	tmplhtml "html/template"
 	"math"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
-
-	tmplhtml "html/template"
 
 	"github.com/gorilla/mux"
 )
@@ -45,24 +44,17 @@ func (c WebServerConfig) CreateWebServer(handler http.Handler) *http.Server {
 	}
 }
 
+type SendFrontendMsq struct {
+	Date       time.Time  `json:"date"`
+	ReceiveMsg string     `json:"receive-msg"`
+	AlertsMsg  msg.Alerts `json:"alerts"`
+}
+
 func (c WebServerConfig) GetHandler(bot bot.TelegramBot, tmps map[string]*tmplhtml.Template) http.Handler {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/alert/{template_name}/{chat_id}", func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
-
-		alertsMsg, receiveMsg, err := msg.Parser(r.Body)
-		if err != nil {
-			c.Logger.ReqError(w, err)
-			c.Logger.ErrEntry().Error(err)
-			c.Logger.ErrEntry().Errorf("Received post request:\n %s", receiveMsg)
-			return
-		}
-
-		c.Logger.InfoEntry().Debugf("Received post request:\n %s", receiveMsg)
-		c.Logger.InfoEntry().Debug("+-----------------------------------------------------------+")
-		c.Logger.InfoEntry().Debug("+-----------------------------------------------------------+")
-		c.Logger.InfoEntry().Debugf("Alert Msg:\n %s", printStrucPretty(alertsMsg))
 
 		templateName, chatID, err := RetrieveTemplateNameAndChatID(r)
 
@@ -73,8 +65,37 @@ func (c WebServerConfig) GetHandler(bot bot.TelegramBot, tmps map[string]*tmplht
 		}
 
 		c.Logger.InfoCT(templateName, chatID, "Received prometheus alert")
-
 		template, err := t.Find(tmps, templateName)
+
+		alertsMsg, receiveMsg, err := msg.Parser(r.Body)
+		if err != nil {
+			c.Logger.ReqError(w, err)
+			c.Logger.ErrEntry().Error(err)
+			c.Logger.ErrEntry().Errorf("Received post request:\n %s", receiveMsg)
+			return
+		}
+
+		// fmt.Println(receiveMsg)
+
+		// s, _ := prettyjson.Marshal(alertsMsg)
+		// fmt.Println(string(s))
+
+		// c.Logger.InfoEntry().Info(string(s))
+
+		// send := SendFrontendMsq{
+		// 	AlertsMsg:  alertsMsg,
+		// 	ReceiveMsg: receiveMsg,
+		// 	Date:       time.Now(),
+		// }
+
+		// b, _ := json.MarshalIndent(alertsMsg, "", "  ")
+		// c.Logger.InfoEntry().Info(string(b))
+		// c.Logger.InfoEntry().Info(alertsMsg)
+
+		/* 		c.Logger.InfoEntry().Debugf("Received post request:\n %s", receiveMsg)
+		   		c.Logger.InfoEntry().Debug("+-----------------------------------------------------------+")
+		   		c.Logger.InfoEntry().Debug("+-----------------------------------------------------------+")
+		   		c.Logger.InfoEntry().Debugf("Alert Msg:\n %s", printStrucPretty(alertsMsg)) */
 
 		msg, ok := err.(*t.ErrDefaultTempatestruct)
 		if err != nil && !ok {
