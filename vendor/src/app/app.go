@@ -37,7 +37,7 @@ func Run(runOptions *options.ServerRunOptions, stopCh <-chan struct{}, l *logger
 		l.InfoEntry().Infof("Success read template: %s ", name)
 	}
 
-	b, err := bot.Create(runOptions.TelegramToken, l)
+	b, err := bot.Create(runOptions, l)
 	if err != nil {
 		return err
 	}

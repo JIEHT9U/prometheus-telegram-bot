@@ -149,6 +149,20 @@
 			"path": "/context"
 		},
 		{
+			"importpath": "golang.org/x/net/internal/socks",
+			"repository": "https://go.googlesource.com/net",
+			"revision": "61147c48b25b599e5b561d2e9c4f3e1ef489ca41",
+			"branch": "master",
+			"path": "/internal/socks"
+		},
+		{
+			"importpath": "golang.org/x/net/proxy",
+			"repository": "https://go.googlesource.com/net",
+			"revision": "61147c48b25b599e5b561d2e9c4f3e1ef489ca41",
+			"branch": "master",
+			"path": "/proxy"
+		},
+		{
 			"importpath": "golang.org/x/sync/errgroup",
 			"repository": "https://go.googlesource.com/sync",
 			"revision": "1d60e4601c6fd243af51cc01ddf169918a5407ca",
