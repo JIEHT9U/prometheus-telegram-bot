@@ -9,13 +9,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	tmplhtml "html/template"
 	"math"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
-
-	tmplhtml "html/template"
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
@@ -68,6 +67,10 @@ func (c WebServerConfig) GetHandler(bot bot.TelegramBot, tmps map[string]*tmplht
 	wsChanel := make(chan wsMsg, 1)
 
 	r.HandleFunc("/ws/{ws_id}", func(w http.ResponseWriter, r *http.Request) {
+		c.Logger.InfoEntry().Infof("New Ws connection:%s", r.URL)
+		// serveWs(hub, w, r)
+		defer c.Logger.InfoEntry().Infof("Defer Ws connection:%s", r.URL)
+
 		ws, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			c.Logger.ReqError(w, err)
@@ -77,14 +80,28 @@ func (c WebServerConfig) GetHandler(bot bot.TelegramBot, tmps map[string]*tmplht
 		defer ws.Close()
 
 		go func() {
+
 			for {
 				_, msg, err := ws.ReadMessage()
 				if err != nil {
 					c.Logger.ErrEntry().Error(err)
+					break
 				}
-				c.Logger.InfoEntry().Infof("msg:%s", msg)
+				c.Logger.InfoEntry().Infof("msg:%s", string(msg))
 			}
 		}()
+
+		for {
+			select {
+			case wsMsg := <-wsChanel:
+				err := ws.WriteJSON(wsMsg.Received)
+				if err != nil {
+					c.Logger.ErrEntry().Errorf("Error send msg in WebSocket:%s", r.URL)
+					break
+				}
+				// fmt.Println(wsMsg)
+			}
+		}
 
 	})
 
@@ -144,9 +161,9 @@ func (c WebServerConfig) GetHandler(bot bot.TelegramBot, tmps map[string]*tmplht
 			Count:     c.MsgSize,
 			Received:  receiveMsg,
 		}:
-			c.Logger.InfoEntry().Info("Success send msg in wsMsg")
+			c.Logger.InfoEntry().Info("Success send msg in wsMsg chanel")
 		case <-time.After(time.Microsecond * 500):
-			c.Logger.ErrEntry().Error("Success send msg in wsMsg timeout 500ms")
+			c.Logger.ErrEntry().Error("Error send msg in wsMsg chanel timeout 500ms")
 		}
 
 		if len(finalMSg) > c.MsgSize {

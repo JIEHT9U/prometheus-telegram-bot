@@ -2,6 +2,7 @@ package app
 
 import (
 	"app/bot"
+	"app/hub"
 	"app/logger"
 	m "app/mapping"
 	"app/options"
@@ -48,6 +49,9 @@ func Run(runOptions *options.ServerRunOptions, stopCh <-chan struct{}, l *logger
 	if err != nil {
 		return err
 	}
+
+	wsHub := hub.New()
+	wsHub.Run(stopCh)
 
 	webCfg := server.NewWebConfig(runOptions, l, stopCh)
 	webCfg.Run(webCfg.CreateWebServer(webCfg.GetHandler(b, tmps)))
