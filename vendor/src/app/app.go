@@ -37,11 +37,13 @@ func Run(runOptions *options.ServerRunOptions, stopCh <-chan struct{}, l *logger
 		l.InfoEntry().Infof("Success read template: %s ", name)
 	}
 
-	b, err := bot.Create(runOptions.TelegramToken, l)
+	b, err := bot.Create(runOptions, l)
 	if err != nil {
-		return err
+		return fmt.Errorf("Err create telegram bot:[%s]", err)
 	}
-
+	if b.Bot == nil {
+		return fmt.Errorf("Err proxy connection")
+	}
 	l.InfoEntry().Infof("Authorized on account [ %s ]", b.Bot.Self.UserName)
 
 	err, _ = b.Run(stopCh)

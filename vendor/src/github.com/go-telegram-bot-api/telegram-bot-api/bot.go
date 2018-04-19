@@ -63,6 +63,7 @@ func (bot *BotAPI) MakeRequest(endpoint string, params url.Values) (APIResponse,
 	method := fmt.Sprintf(APIEndpoint, bot.Token, endpoint)
 
 	resp, err := bot.Client.PostForm(method, params)
+
 	if err != nil {
 		return APIResponse{}, err
 	}
@@ -191,6 +192,7 @@ func (bot *BotAPI) UploadFile(endpoint string, params map[string]string, fieldna
 	ms.SetupRequest(req)
 
 	res, err := bot.Client.Do(req)
+
 	if err != nil {
 		return APIResponse{}, err
 	}
@@ -242,9 +244,10 @@ func (bot *BotAPI) GetMe() (User, error) {
 	if err != nil {
 		return User{}, err
 	}
-
 	var user User
-	json.Unmarshal(resp.Result, &user)
+	if err := json.Unmarshal(resp.Result, &user); err != nil {
+		return user, err
+	}
 
 	bot.debugLog("getMe", nil, user)
 

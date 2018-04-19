@@ -2,11 +2,14 @@ package bot
 
 import (
 	"app/logger"
+	"app/options"
+	"app/proxy"
 	"app/storage"
 	"fmt"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/pkg/errors"
+	p "golang.org/x/net/proxy"
 )
 
 // type BOT_COMMAND string
@@ -16,13 +19,44 @@ type TelegramBot struct {
 	logger  *logger.Logger
 }
 
-//Create(token string) (<-chan tgbotapi.Update, *tgbotapi.BotAPI, error) {
-func Create(token string, l *logger.Logger) (TelegramBot, error) {
+func chechProxyRequire(o *options.ServerRunOptions) bool {
+	if o.ProxyPassword != "" && o.ProxyUser != "" && o.ProxyNetwork != "" {
+		return true
+	}
+	return false
+}
+
+/* func defaulDialer() *http.Client {
+
+	httpTransport := &http.Transport{}
+	httpClient := &http.Client{Transport: httpTransport}
+	httpTransport.Dial = net.Dialer{}
+	return httpClient, nil
+} */
+
+//Create ...
+func Create(o *options.ServerRunOptions, l *logger.Logger) (TelegramBot, error) {
+
 	var tBot TelegramBot
-	bot, err := tgbotapi.NewBotAPI(token)
+	var err error
+	var bot *tgbotapi.BotAPI
+
+	if chechProxyRequire(o) {
+		l.InfoEntry().Infof("Proxy %s connections...", o.ProxyURL)
+
+		client, err := proxy.New(o.ProxyNetwork, o.ProxyURL, &p.Auth{User: o.ProxyUser, Password: o.ProxyPassword}, o.ProxyTimeOut)
+		if err != nil {
+			return tBot, err
+		}
+		bot, err = tgbotapi.NewBotAPIWithClient(o.TelegramToken, client)
+	} else {
+		bot, err = tgbotapi.NewBotAPI(o.TelegramToken)
+	}
+
 	if err != nil {
 		return tBot, errors.Wrap(err, "Telegram bot")
 	}
+	// l.InfoEntry().Info("Success bot connections")
 
 	return TelegramBot{Bot: bot, logger: l}, nil
 }

@@ -59,10 +59,10 @@ func (c WebServerConfig) GetHandler(bot bot.TelegramBot, tmps map[string]*tmplht
 			return
 		}
 
-		c.Logger.InfoEntry().Debugf("Received post request:\n %s", receiveMsg)
-		c.Logger.InfoEntry().Debug("+-----------------------------------------------------------+")
-		c.Logger.InfoEntry().Debug("+-----------------------------------------------------------+")
-		c.Logger.InfoEntry().Debugf("Alert Msg:\n %s", printStrucPretty(alertsMsg))
+		// c.Logger.InfoEntry().Debugf("Received post request:\n %s", receiveMsg)
+		// c.Logger.InfoEntry().Debug("+-----------------------------------------------------------+")
+		// c.Logger.InfoEntry().Debug("+-----------------------------------------------------------+")
+		// c.Logger.InfoEntry().Debugf("Alert Msg:\n %s", printStrucPretty(alertsMsg))
 
 		templateName, chatID, err := RetrieveTemplateNameAndChatID(r)
 
