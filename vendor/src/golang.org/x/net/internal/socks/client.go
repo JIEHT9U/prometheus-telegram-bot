@@ -5,9 +5,11 @@
 package socks
 
 import (
-	"context"
+	"bytes"
 	"errors"
+	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
 	"strconv"
 	"time"
@@ -18,109 +20,59 @@ var (
 	aLongTimeAgo = time.Unix(1, 0)
 )
 
-func (d *Dialer) connect(ctx context.Context, c net.Conn, address string) (_ net.Addr, ctxErr error) {
+func (d *Dialer) upgrader(c net.Conn, address string) (net.Addr, error) {
 	host, port, err := splitHostPort(address)
 	if err != nil {
 		return nil, err
 	}
-	if deadline, ok := ctx.Deadline(); ok && !deadline.IsZero() {
-		c.SetDeadline(deadline)
-		defer c.SetDeadline(noDeadline)
-	}
-	if ctx != context.Background() {
-		errCh := make(chan error, 1)
-		done := make(chan struct{})
-		defer func() {
-			close(done)
-			if ctxErr == nil {
-				ctxErr = <-errCh
-			}
-		}()
-		go func() {
-			select {
-			case <-ctx.Done():
-				c.SetDeadline(aLongTimeAgo)
-				errCh <- ctx.Err()
-			case <-done:
-				errCh <- nil
-			}
-		}()
+
+	authMsg, err := d.authorizationMsg()
+	if err != nil {
+		return nil, fmt.Errorf("Error create socks5 auth Msg [%s]", err)
 	}
 
-	b := make([]byte, 0, 6+len(host)) // the size here is just an estimate
-	b = append(b, Version5)
-	if len(d.AuthMethods) == 0 || d.Authenticate == nil {
-		b = append(b, 1, byte(AuthMethodNotRequired))
-	} else {
-		ams := d.AuthMethods
-		if len(ams) > 255 {
-			return nil, errors.New("too many authentication methods")
-		}
-		b = append(b, byte(len(ams)))
-		for _, am := range ams {
-			b = append(b, byte(am))
-		}
-	}
-	if _, ctxErr = c.Write(b); ctxErr != nil {
-		return
+	if _, err := c.Write(authMsg); err != nil {
+		return nil, fmt.Errorf("Error write socks5 auth Msg in connection [%s]", err)
 	}
 
-	if _, ctxErr = io.ReadFull(c, b[:2]); ctxErr != nil {
-		return
-	}
-	if b[0] != Version5 {
-		return nil, errors.New("unexpected protocol version " + strconv.Itoa(int(b[0])))
-	}
-	am := AuthMethod(b[1])
-	if am == AuthMethodNoAcceptableMethods {
-		return nil, errors.New("no acceptable authentication methods")
-	}
-	if d.Authenticate != nil {
-		if ctxErr = d.Authenticate(ctx, c, am); ctxErr != nil {
-			return
-		}
+	if err := d.validateSocksVersion(c); err != nil {
+		return nil, fmt.Errorf("Error validate socks5 version [%s]", err)
 	}
 
-	b = b[:0]
-	b = append(b, Version5, byte(d.cmd), 0)
-	if ip := net.ParseIP(host); ip != nil {
-		if ip4 := ip.To4(); ip4 != nil {
-			b = append(b, AddrTypeIPv4)
-			b = append(b, ip4...)
-		} else if ip6 := ip.To16(); ip6 != nil {
-			b = append(b, AddrTypeIPv6)
-			b = append(b, ip6...)
-		} else {
-			return nil, errors.New("unknown address type")
-		}
-	} else {
-		if len(host) > 255 {
-			return nil, errors.New("FQDN too long")
-		}
-		b = append(b, AddrTypeFQDN)
-		b = append(b, byte(len(host)))
-		b = append(b, host...)
-	}
-	b = append(b, byte(port>>8), byte(port))
-	if _, ctxErr = c.Write(b); ctxErr != nil {
-		return
+	cmdByte, err := d.useCmd(host, port)
+	if err != nil {
+		return nil, fmt.Errorf("Error use Cmd socks5 [%s]", err)
 	}
 
-	if _, ctxErr = io.ReadFull(c, b[:4]); ctxErr != nil {
-		return
+	if _, err := c.Write(cmdByte); err != nil {
+		return nil, fmt.Errorf("Error write socks5 cmd Byte in connection [%s]", err)
 	}
-	if b[0] != Version5 {
-		return nil, errors.New("unexpected protocol version " + strconv.Itoa(int(b[0])))
+
+	return validateResponce(c)
+}
+
+func validateResponce(c net.Conn) (net.Addr, error) {
+	var res = make([]byte, 4)
+	var l = 2
+	a := &Addr{}
+
+	if _, err := io.ReadFull(c, res); err != nil {
+		return a, fmt.Errorf("validate comand responce [%s]", err)
 	}
-	if cmdErr := Reply(b[1]); cmdErr != StatusSucceeded {
-		return nil, errors.New("unknown error " + cmdErr.String())
+
+	if res[0] != Version5 {
+		return a, errors.New("unexpected protocol version " + strconv.Itoa(int(res[0])))
 	}
-	if b[2] != 0 {
-		return nil, errors.New("non-zero reserved field")
+
+	if err := Reply(res[1]); err != StatusSucceeded {
+		return a, errors.New("unknown error " + err.String())
 	}
-	l := 2
-	var a Addr
-	switch b[3] {
+
+	if res[2] != 0 {
+		return a, errors.New("non-zero reserved field")
+	}
+
+	switch res[3] {
 	case AddrTypeIPv4:
 		l += net.IPv4len
 		a.IP = make(net.IP, net.IPv4len)
@@ -128,28 +80,114 @@ func (d *Dialer) connect(ctx context.Context, c net.Conn, address string) (_ net
 		l += net.IPv6len
 		a.IP = make(net.IP, net.IPv6len)
 	case AddrTypeFQDN:
-		if _, err := io.ReadFull(c, b[:1]); err != nil {
-			return nil, err
+		r, err := ioutil.ReadAll(c)
+		if err != nil {
+			return a, err
 		}
-		l += int(b[0])
+		l += int(r[0])
 	default:
-		return nil, errors.New("unknown address type " + strconv.Itoa(int(b[3])))
+		return a, errors.New("unknown address type " + strconv.Itoa(int(res[3])))
 	}
-	if cap(b) < l {
-		b = make([]byte, l)
-	} else {
-		b = b[:l]
+
+	b := make([]byte, l)
+	if _, err := io.ReadFull(c, b); err != nil {
+		return a, err
 	}
-	if _, ctxErr = io.ReadFull(c, b); ctxErr != nil {
-		return
-	}
+
 	if a.IP != nil {
 		copy(a.IP, b)
 	} else {
 		a.Name = string(b[:len(b)-2])
 	}
 	a.Port = int(b[len(b)-2])<<8 | int(b[len(b)-1])
-	return &a, nil
+	return a, nil
+}
+
+func (d *Dialer) useCmd(host string, port int) ([]byte, error) {
+	var cmd bytes.Buffer
+
+	cmd.WriteByte(Version5)
+	cmd.WriteByte(byte(d.cmd))
+	cmd.WriteByte(0)
+
+	if ip := net.ParseIP(host); ip != nil {
+		if ip4 := ip.To4(); ip4 != nil {
+			cmd.WriteByte(AddrTypeIPv4)
+			cmd.WriteByte(AddrTypeIPv4)
+			for _, ipBytes := range ip4 {
+				cmd.WriteByte(ipBytes)
+			}
+
+		} else if ip6 := ip.To16(); ip6 != nil {
+			cmd.WriteByte(AddrTypeIPv6)
+			for _, ipBytes := range ip6 {
+				cmd.WriteByte(ipBytes)
+			}
+
+		} else {
+			return nil, errors.New("unknown address type")
+		}
+	} else {
+		hostLen := len(host)
+		if hostLen > 255 {
+			return nil, errors.New("FQDN too long")
+		}
+		cmd.WriteByte(AddrTypeFQDN)
+		cmd.WriteByte(byte(hostLen))
+		for _, hBytes := range []byte(host) {
+			cmd.WriteByte(hBytes)
+		}
+	}
+
+	cmd.WriteByte(byte(port >> 8))
+	cmd.WriteByte(byte(port))
+
+	return cmd.Bytes(), nil
+}
+
+func (d *Dialer) validateSocksVersion(c net.Conn) error {
+	res := make([]byte, 2)
+
+	if _, err := io.ReadFull(c, res); err != nil {
+		return fmt.Errorf("validate socks version [%s]", err)
+	}
+
+	if res[0] != Version5 {
+		return errors.New("unexpected protocol version " + strconv.Itoa(int(res[0])))
+	}
+
+	am := AuthMethod(res[1])
+	if am == AuthMethodNoAcceptableMethods {
+		return errors.New("no acceptable authentication methods")
+	}
+
+	if err := d.Authenticate(c, am); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (d *Dialer) authorizationMsg() ([]byte, error) {
+	var buf bytes.Buffer
+
+	buf.WriteByte(Version5)
+	if len(d.AuthMethods) == 0 || d.Authenticate == nil {
+		buf.WriteByte(1)
+		buf.WriteByte(byte(AuthMethodNotRequired))
+	} else {
+		aMethods := d.AuthMethods
+		lenAMethods := len(aMethods)
+		if lenAMethods > 255 {
+			return nil, errors.New("too many authentication methods")
+		}
+		buf.WriteByte(byte(lenAMethods))
+		for _, am := range aMethods {
+			buf.WriteByte(byte(am))
+		}
+	}
+
+	return buf.Bytes(), nil
 }
 
 func splitHostPort(address string) (string, int, error) {

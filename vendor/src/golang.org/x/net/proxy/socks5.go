@@ -5,8 +5,7 @@
 package proxy
 
 import (
-	"context"
-	"net"
+	"time"
 
 	"golang.org/x/net/internal/socks"
 )
@@ -14,23 +13,20 @@ import (
 // SOCKS5 returns a Dialer that makes SOCKSv5 connections to the given
 // address with an optional username and password.
 // See RFC 1928 and RFC 1929.
-func SOCKS5(network, address string, auth *Auth, forward Dialer) (Dialer, error) {
-	d := socks.NewDialer(network, address)
-	if forward != nil {
-		d.ProxyDial = func(_ context.Context, network string, address string) (net.Conn, error) {
-			return forward.Dial(network, address)
-		}
-	}
+func SOCKS5(network, address string, auth *Auth, proxyTimeOut time.Duration) (Dialer, error) {
+
+	dialer := socks.NewDialer(network, address, proxyTimeOut)
+
 	if auth != nil {
-		up := socks.UsernamePassword{
+		usernamePassword := socks.UsernamePassword{
 			Username: auth.User,
 			Password: auth.Password,
 		}
-		d.AuthMethods = []socks.AuthMethod{
+		dialer.AuthMethods = []socks.AuthMethod{
 			socks.AuthMethodNotRequired,
 			socks.AuthMethodUsernamePassword,
 		}
-		d.Authenticate = up.Authenticate
+		dialer.Authenticate = usernamePassword.Authenticate
 	}
-	return d, nil
+	return dialer, nil
 }

@@ -3,6 +3,7 @@ package options
 import (
 	"fmt"
 	"net"
+	"time"
 
 	"github.com/spf13/pflag"
 )
@@ -13,6 +14,7 @@ type ServerRunOptions struct {
 	ProxyPassword    string
 	ProxyURL         string
 	ProxyNetwork     string
+	ProxyTimeOut     time.Duration
 	TemplatePaths    []string
 	TimeZone         string
 	TimeOutFormat    string
@@ -33,6 +35,7 @@ func NewServerRunOptions() *ServerRunOptions {
 		MappingNamePaths: []string{"mapping/*.yaml"},
 		MessageSizeBytes: 2048,
 		ProxyNetwork:     "tcp",
+		ProxyTimeOut:     time.Millisecond * 1500,
 	}
 }
 
@@ -78,6 +81,8 @@ func (server *ServerRunOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.BoolVarP(&server.JSON, "json", "j", server.JSON, ""+
 		"Output log format JSON or Systemd")
 
+	fs.DurationVar(&server.ProxyTimeOut, "proxy-timeout", server.ProxyTimeOut, ""+
+		"Proxy time out")
 }
 
 func (options *ServerRunOptions) Validate() []error {

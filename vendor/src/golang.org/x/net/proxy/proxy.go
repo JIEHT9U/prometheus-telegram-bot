@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"sync"
+	"time"
 )
 
 // A Dialer is a means to establish a connection.
@@ -80,7 +81,7 @@ func FromURL(u *url.URL, forward Dialer) (Dialer, error) {
 
 	switch u.Scheme {
 	case "socks5":
-		return SOCKS5("tcp", u.Host, auth, forward)
+		return SOCKS5("tcp", u.Host, auth, time.Millisecond*2500)
 	}
 
 	// If the scheme doesn't match any of the built-in schemes, see if it

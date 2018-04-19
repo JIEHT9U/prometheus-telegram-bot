@@ -15,6 +15,7 @@ import (
 	"io"
 	"net"
 	"strconv"
+	"time"
 )
 
 // A Command represents a SOCKS command.
@@ -119,9 +120,10 @@ func (c *Conn) BoundAddr() net.Addr {
 
 // A Dialer holds SOCKS-specific options.
 type Dialer struct {
-	cmd          Command // either CmdConnect or cmdBind
-	proxyNetwork string  // network between a proxy server and a client
-	proxyAddress string  // proxy server address
+	cmd          Command       // either CmdConnect or cmdBind
+	proxyNetwork string        // network between a proxy server and a client
+	proxyAddress string        // proxy server address
+	timeOut      time.Duration //connection time out
 
 	// ProxyDial specifies the optional dial function for
 	// establishing the transport connection.
@@ -135,7 +137,7 @@ type Dialer struct {
 	// Authenticate specifies the optional authentication
 	// function. It must be non-nil when AuthMethods is not empty.
 	// It must return an error when the authentication is failed.
-	Authenticate func(context.Context, io.ReadWriter, AuthMethod) error
+	Authenticate func(io.ReadWriter, AuthMethod) error
 }
 
 // DialContext connects to the provided address on the provided
@@ -148,7 +150,7 @@ type Dialer struct {
 //
 // See func Dial of the net package of standard library for a
 // description of the network and address parameters.
-func (d *Dialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
+func (d *Dialer) dial(network, address string) (net.Conn, error) {
 	switch network {
 	case "tcp", "tcp6", "tcp4":
 	default:
@@ -161,35 +163,34 @@ func (d *Dialer) DialContext(ctx context.Context, network, address string) (net.
 		proxy, dst, _ := d.pathAddrs(address)
 		return nil, &net.OpError{Op: d.cmd.String(), Net: network, Source: proxy, Addr: dst, Err: errors.New("command not implemented")}
 	}
-	if ctx == nil {
-		ctx = context.Background()
+
+	// var dd net.Dialer
+	// c, err := dd.DialContext(ctx, d.proxyNetwork, d.proxyAddress)
+
+	var defaultDialer = &net.Dialer{
+		Timeout: d.timeOut,
 	}
-	var err error
-	var c net.Conn
-	if d.ProxyDial != nil {
-		c, err = d.ProxyDial(ctx, d.proxyNetwork, d.proxyAddress)
-	} else {
-		var dd net.Dialer
-		c, err = dd.DialContext(ctx, d.proxyNetwork, d.proxyAddress)
-	}
+
+	conn, err := defaultDialer.Dial(d.proxyNetwork, d.proxyAddress)
 	if err != nil {
 		proxy, dst, _ := d.pathAddrs(address)
 		return nil, &net.OpError{Op: d.cmd.String(), Net: network, Source: proxy, Addr: dst, Err: err}
 	}
-	a, err := d.connect(ctx, c, address)
+	// defer conn.Close()
+	a, err := d.upgrader(conn, address)
 	if err != nil {
-		c.Close()
+		conn.Close()
 		proxy, dst, _ := d.pathAddrs(address)
 		return nil, &net.OpError{Op: d.cmd.String(), Net: network, Source: proxy, Addr: dst, Err: err}
 	}
-	return &Conn{Conn: c, boundAddr: a}, nil
+	return &Conn{Conn: conn, boundAddr: a}, nil
 }
 
 // Dial connects to the provided address on the provided network.
 //
 // Deprecated: Use DialContext instead.
 func (d *Dialer) Dial(network, address string) (net.Conn, error) {
-	return d.DialContext(context.Background(), network, address)
+	return d.dial(network, address)
 }
 
 func (d *Dialer) pathAddrs(address string) (proxy, dst net.Addr, err error) {
@@ -214,8 +215,8 @@ func (d *Dialer) pathAddrs(address string) (proxy, dst net.Addr, err error) {
 
 // NewDialer returns a new Dialer that dials through the provided
 // proxy server's network and address.
-func NewDialer(network, address string) *Dialer {
-	return &Dialer{proxyNetwork: network, proxyAddress: address, cmd: CmdConnect}
+func NewDialer(network, address string, timeOut time.Duration) *Dialer {
+	return &Dialer{proxyNetwork: network, proxyAddress: address, cmd: CmdConnect, timeOut: timeOut}
 }
 
 const (
@@ -232,7 +233,7 @@ type UsernamePassword struct {
 
 // Authenticate authenticates a pair of username and password with the
 // proxy server.
-func (up *UsernamePassword) Authenticate(ctx context.Context, rw io.ReadWriter, auth AuthMethod) error {
+func (up *UsernamePassword) Authenticate(rw io.ReadWriter, auth AuthMethod) error {
 	switch auth {
 	case AuthMethodNotRequired:
 		return nil

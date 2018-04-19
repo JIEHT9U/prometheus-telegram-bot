@@ -10,7 +10,7 @@ VERSION_FLAGS    := -ldflags='-X "main.Version=$(VERSION)" -X "main.BuildTime=$(
 bin_dir			 := $(CURDIR)/bin
 dist_dir 		 := $(CURDIR)/dist
 
-GITVERSION		 := 1.0.3
+GITVERSION		 := 1.0.4
 
 .PHONY: all 
 all: test build

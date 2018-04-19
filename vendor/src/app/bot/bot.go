@@ -26,6 +26,14 @@ func chechProxyRequire(o *options.ServerRunOptions) bool {
 	return false
 }
 
+/* func defaulDialer() *http.Client {
+
+	httpTransport := &http.Transport{}
+	httpClient := &http.Client{Transport: httpTransport}
+	httpTransport.Dial = net.Dialer{}
+	return httpClient, nil
+} */
+
 //Create ...
 func Create(o *options.ServerRunOptions, l *logger.Logger) (TelegramBot, error) {
 
@@ -34,7 +42,9 @@ func Create(o *options.ServerRunOptions, l *logger.Logger) (TelegramBot, error) 
 	var bot *tgbotapi.BotAPI
 
 	if chechProxyRequire(o) {
-		client, err := proxy.New(o.ProxyNetwork, o.ProxyURL, &p.Auth{User: o.ProxyUser, Password: o.ProxyPassword}, nil)
+		l.InfoEntry().Infof("Proxy %s connections...", o.ProxyURL)
+
+		client, err := proxy.New(o.ProxyNetwork, o.ProxyURL, &p.Auth{User: o.ProxyUser, Password: o.ProxyPassword}, o.ProxyTimeOut)
 		if err != nil {
 			return tBot, err
 		}
@@ -46,6 +56,7 @@ func Create(o *options.ServerRunOptions, l *logger.Logger) (TelegramBot, error) 
 	if err != nil {
 		return tBot, errors.Wrap(err, "Telegram bot")
 	}
+	// l.InfoEntry().Info("Success bot connections")
 
 	return TelegramBot{Bot: bot, logger: l}, nil
 }
