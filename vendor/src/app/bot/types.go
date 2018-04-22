@@ -1,4 +1,4 @@
-package tgbotapi
+package bot
 
 import (
 	"encoding/json"

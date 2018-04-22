@@ -42,18 +42,16 @@ func NewBotAPI(token string) (*BotAPI, error) {
 //
 // It requires a token, provided by @BotFather on Telegram.
 func NewBotAPIWithClient(token string, client *http.Client) (*BotAPI, error) {
+	var err error
 	bot := &BotAPI{
 		Token:  token,
 		Client: client,
 		Buffer: 100,
 	}
 
-	self, err := bot.GetMe()
-	if err != nil {
+	if bot.Self, err = bot.GetMe(); err != nil {
 		return nil, err
 	}
-
-	bot.Self = self
 
 	return bot, nil
 }
@@ -63,7 +61,6 @@ func (bot *BotAPI) MakeRequest(endpoint string, params url.Values) (APIResponse,
 	method := fmt.Sprintf(APIEndpoint, bot.Token, endpoint)
 
 	resp, err := bot.Client.PostForm(method, params)
-
 	if err != nil {
 		return APIResponse{}, err
 	}

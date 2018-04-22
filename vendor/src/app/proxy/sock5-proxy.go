@@ -13,12 +13,15 @@ func New(network, address string, auth *proxy.Auth, proxyTimeOut time.Duration) 
 	dialer, err := proxy.SOCKS5(network, address, auth, proxyTimeOut)
 
 	if err != nil {
-		return nil, fmt.Errorf("Error create new")
+		return nil, fmt.Errorf("Error create new sock5 dialer")
 	}
 
+	tranport := &http.Transport{
+		Dial: dialer.Dial,
+	}
 	// setup a http client
-	httpTransport := &http.Transport{}
-	httpClient := &http.Client{Transport: httpTransport}
-	httpTransport.Dial = dialer.Dial
+	httpClient := &http.Client{
+		Transport: tranport,
+	}
 	return httpClient, nil
 }

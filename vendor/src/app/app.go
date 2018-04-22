@@ -5,7 +5,6 @@ import (
 	"app/logger"
 	m "app/mapping"
 	"app/options"
-	"app/server"
 	t "app/template"
 	"app/utilerrors"
 	"fmt"
@@ -37,22 +36,27 @@ func Run(runOptions *options.ServerRunOptions, stopCh <-chan struct{}, l *logger
 		l.InfoEntry().Infof("Success read template: %s ", name)
 	}
 
-	b, err := bot.Create(runOptions, l)
+	b, err := bot.New(runOptions, l)
 	if err != nil {
 		return fmt.Errorf("Err create telegram bot:[%s]", err)
 	}
-	if b.Bot == nil {
-		return fmt.Errorf("Err proxy connection")
-	}
-	l.InfoEntry().Infof("Authorized on account [ %s ]", b.Bot.Self.UserName)
-
-	err, _ = b.Run(stopCh)
+	info, err := b.GetInfo()
 	if err != nil {
 		return err
 	}
+	l.InfoEntry().Infof("Authorized on account [ %s ]", info.FirstName)
+	/* 	if b.Bot == nil {
+	   		return fmt.Errorf("Err proxy connection")
+	   	}
+	   	l.InfoEntry().Infof("Authorized on account [ %s ]", b.Bot.Self.UserName)
 
-	webCfg := server.NewWebConfig(runOptions, l, stopCh)
-	webCfg.Run(webCfg.CreateWebServer(webCfg.GetHandler(b, tmps)))
+	   	err, _ = b.Run(stopCh)
+	   	if err != nil {
+	   		return err
+	   	} */
+
+	// webCfg := server.NewWebConfig(runOptions, l, stopCh)
+	// webCfg.Run(webCfg.CreateWebServer(webCfg.GetHandler(b, tmps)))
 
 	return nil
 }

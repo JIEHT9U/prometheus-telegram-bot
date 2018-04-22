@@ -10,10 +10,7 @@ import (
 
 type ServerRunOptions struct {
 	TelegramToken    string
-	ProxyUser        string
-	ProxyPassword    string
 	ProxyURL         string
-	ProxyNetwork     string
 	ProxyTimeOut     time.Duration
 	TemplatePaths    []string
 	TimeZone         string
@@ -34,8 +31,7 @@ func NewServerRunOptions() *ServerRunOptions {
 		TemplatePaths:    []string{"template/*.tmpl"},
 		MappingNamePaths: []string{"mapping/*.yaml"},
 		MessageSizeBytes: 2048,
-		ProxyNetwork:     "tcp",
-		ProxyTimeOut:     time.Millisecond * 1500,
+		ProxyTimeOut:     time.Millisecond * 2500,
 	}
 }
 
@@ -44,12 +40,6 @@ func (server *ServerRunOptions) AddFlags(fs *pflag.FlagSet) {
 
 	fs.StringVar(&server.TelegramToken, "telegram-token", server.TelegramToken, ""+
 		"Telegram token")
-
-	fs.StringVar(&server.ProxyUser, "proxy-user", server.ProxyUser, ""+
-		"Proxy user name")
-
-	fs.StringVar(&server.ProxyPassword, "proxy-password", server.ProxyPassword, ""+
-		"Proxy password")
 
 	fs.StringVar(&server.ProxyURL, "proxy-url", server.ProxyURL, ""+
 		"Proxy url path")
